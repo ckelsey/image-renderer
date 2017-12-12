@@ -4,7 +4,7 @@ window.imageRenderer = {
 	subscriptions: {},
 
 	resetStats: function () {
-		this.stats = {
+		window.imageRenderer.stats = {
 			x: 0,
 			y: 0,
 			z: 0,
@@ -19,15 +19,16 @@ window.imageRenderer = {
 	},
 
 	subscribe: function (event, callback) {
-		if (!this.subscriptions[event]) {
-			this.subscriptions[event] = [];
+		console.log("event", event);
+		if (!window.imageRenderer.subscriptions[event]) {
+			window.imageRenderer.subscriptions[event] = [];
 		}
 
-		this.subscriptions[event].push(callback);
+		window.imageRenderer.subscriptions[event].push(callback);
 	},
 
 	trigger: function (event, data) {
-		var self = this;
+		var self = window.imageRenderer;
 
 		if (!self.subscriptions[event]) {
 			return;
@@ -39,7 +40,7 @@ window.imageRenderer = {
 	},
 
 	passToMethod: function (data, method) {
-		this.methods[method](data);
+		window.imageRenderer.methods[method](data);
 	},
 
 	loadImage: function (url, endCB, progressCB, errorCB) {
@@ -118,7 +119,7 @@ window.imageRenderer = {
 	},
 
 	init: function (data) {
-		var self = this;
+		var self = window.imageRenderer;
 
 		return new Promise(function (resolve, reject) {
 
@@ -141,8 +142,10 @@ window.imageRenderer = {
 				return method(data).then(function () {
 					if (data.crop) {
 						window.imageRenderer.cropper.init(data.element, data.crop)
-						return
 					}
+
+					return resolve()
+
 				});
 			}
 

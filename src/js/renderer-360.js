@@ -264,10 +264,6 @@ window.imageRenderer.methods.render360 = function (data) {
 						canDoVR = vrDisplay.capabilities.canPresent;
 					}
 
-					if (!canDoVR) {
-						vrButton.style.display = "none";
-					}
-
 					run();
 				});
 			} catch (e) {

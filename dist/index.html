@@ -85,16 +85,16 @@
 			<b id="view_height"></b>
 		</p>
 		<p>Crop X:
-			<b id="x">10%</b>
+			<b id="x"></b>
 		</p>
 		<p>Crop Y:
-			<b id="y">10%</b>
+			<b id="y"></b>
 		</p>
 		<p>Crop Width:
-			<b id="w">10%</b>
+			<b id="w"></b>
 		</p>
 		<p>Crop Height:
-			<b id="h">10%</b>
+			<b id="h"></b>
 		</p>
 		<p>
 			<button id="download_screen">Download screenshot</button>
@@ -177,32 +177,23 @@
 
 			statusMessage.textContent = "Drawing"
 
-			method.then(function (onUpdate) {
+			console.log(method);
+
+			method.then(function () {
 
 				statusMessage.textContent = ""
 				dimensions.style.display = "flex"
 
-				onUpdate(function (data) {
+				window.imageRenderer.subscribe("statsUpdate", function (data) {
 
-					pan = panText.textContent = data.pan.toFixed(2)
-					tilt = tiltText.textContent = data.tilt.toFixed(2)
-					zoom = zoomText.textContent = data.zoom.toFixed(2)
+					pan = panText.textContent = data.x.toFixed(2)
+					tilt = tiltText.textContent = data.y.toFixed(2)
+					zoom = zoomText.textContent = data.z.toFixed(2)
 					viewHeight = viewHeightText.textContent = Math.round(data.viewHeight)
 					viewWidth = viewWidthText.textContent = Math.round(data.viewWidth)
+					// statusMessage.textContent = data.status
 				})
 
-				// var cropData = window.imageRenderer.cropper.getCoordinates()
-				// xText.textContent = cropX = Math.round(cropData.x)
-				// yText.textContent = cropY = Math.round(cropData.y)
-				// wText.textContent = cropWidth = Math.round(cropData.width)
-				// hText.textContent = cropHeight = Math.round(cropData.height)
-
-				// window.imageRenderer.cropper.onUpdate(function (data) {
-				// 	xText.textContent = cropX = Math.round(data.x)
-				// 	yText.textContent = cropY = Math.round(data.y)
-				// 	wText.textContent = cropWidth = Math.round(data.width)
-				// 	hText.textContent = cropHeight = Math.round(data.height)
-				// })
 
 				// window.imageRenderer.cropper.show()
 
@@ -224,6 +215,19 @@
 		showCrop.addEventListener("change", function(){
 			if(this.checked){
 				window.imageRenderer.cropper.init(document.getElementById("canvas_wrapper"))
+
+				var cropData = window.imageRenderer.cropper.getCoordinates()
+				xText.textContent = cropX = Math.round(cropData.x)
+				yText.textContent = cropY = Math.round(cropData.y)
+				wText.textContent = cropWidth = Math.round(cropData.width)
+				hText.textContent = cropHeight = Math.round(cropData.height)
+
+				window.imageRenderer.cropper.onUpdate(function (data) {
+					xText.textContent = cropX = Math.round(data.x)
+					yText.textContent = cropY = Math.round(data.y)
+					wText.textContent = cropWidth = Math.round(data.width)
+					hText.textContent = cropHeight = Math.round(data.height)
+				})
 			}else{
 				window.imageRenderer.cropper.destroy()
 			}
