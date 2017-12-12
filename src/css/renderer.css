@@ -1,0 +1,180 @@
+[imagerenderer="true"] {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    display: inline-block;
+    background-color: #1c1c1c;
+    background-repeat: no-repeat;
+    background-size: 40px;
+    background-position: 50% 50%;
+    cursor: grab;
+    cursor: -webkit-grab;
+    cursor: -moz-grab;
+    cursor: -ms-grab;
+}
+[imagerenderer="true"].fullscreen {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+}
+[imagerenderer="true"] div {
+    display: flex;
+    width: 100%;
+    position: absolute;
+    bottom: 0px;
+    z-index: 99999;
+    pointer-events: all;
+    justify-content: flex-end;
+    padding: 4px 10px;
+    box-sizing: border-box;
+}
+[imagerenderer="true"] button {
+    position: relative;
+    width: 16px;
+    color: #fff;
+    opacity: .7;
+    background: transparent;
+    border: none;
+    outline: none !important;
+    box-sizing: border-box;
+    padding: 0px;
+    margin: 7px;
+}
+[imagerenderer="true"] button svg {
+    fill: currentColor;
+    box-sizing: border-box;
+}
+[imagerenderer="true"] .renderer-progressbar {
+    display: block;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: 5px;
+    width: 0%;
+    padding: 0px;
+    background: #76b900;
+    z-index: 99999999;
+    transition: opacity .5s;
+}
+#crop-positioner {
+    z-index: 9999999;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+    top: 0px;
+    left: 0px;
+    pointer-events: none;
+    transition: opacity .2s;
+    display: block;
+    padding: 0px;
+}
+#crop-positioner table {
+    width: 100%;
+    height: 100%;
+    border-collapse: collapse;
+}
+
+#crop-positioner div {
+display: block;
+padding: 0px;
+}
+
+#crop-positioner table td {
+    background: rgba(0, 0, 0, .42);
+}
+#crop-positioner table td#north-west-handle,
+#crop-positioner table td#north-east-handle,
+#crop-positioner table td#north-handle,
+#crop-positioner table td#south-west-handle,
+#crop-positioner table td#south-east-handle,
+#crop-positioner table td#south-handle,
+#crop-positioner table td#west-handle,
+#crop-positioner table td#east-handle {
+    pointer-events: all;
+}
+#crop-positioner table td#revealed-space {
+    pointer-events: none;
+}
+#crop-positioner table td .handle {
+    background: rgba(200, 200, 200, .75);
+    box-shadow: inset 0px 0px 0px 1px rgba(50, 50, 50, .75);
+    width: 10px;
+    height: 10px;
+    position: relative;
+    border-radius: 2px;
+    transition: transform .2s;
+}
+#crop-positioner table td:hover .handle {
+    transform: scale(1.2);
+}
+#crop-positioner .positioner-cutout {
+    position: absolute;
+    background: rgba(62, 62, 62, 0.7);
+    display: flex;
+    pointer-events: all;
+}
+#crop-positioner .positioner-cutout.cutout-top,
+#crop-positioner .positioner-cutout.cutout-bottom {
+    width: 100%;
+    flex-direction: column;
+    left: 0px;
+    height: 10%;
+    cursor: ns-resize;
+}
+#crop-positioner .positioner-cutout.cutout-left,
+#crop-positioner .positioner-cutout.cutout-right {
+    top: 0px;
+    height: 100%;
+    flex-direction: row;
+    min-width: 10px;
+    cursor: ew-resize;
+    width: 10%;
+}
+#crop-positioner .positioner-cutout.cutout-top {
+    top: 0%;
+    justify-content: flex-end;
+}
+#crop-positioner .positioner-cutout.cutout-bottom {
+    bottom: 0%;
+    justify-content: flex-start;
+}
+#crop-positioner .positioner-cutout.cutout-left {
+    justify-content: flex-end;
+    left: 0%;
+}
+#crop-positioner .positioner-cutout.cutout-right {
+    justify-content: flex-start;
+    right: 0%;
+}
+#crop-positioner .cutout-top .cutout-handle,
+#crop-positioner .cutout-bottom .cutout-handle,
+#crop-positioner .cutout-left .cutout-handle,
+#crop-positioner .cutout-right .cutout-handle {
+    border-color: rgba(176, 176, 176, 0.38);
+    border-style: dotted;
+    border-width: 0px;
+}
+#crop-positioner .cutout-top .cutout-handle,
+#crop-positioner .cutout-bottom .cutout-handle {
+    width: 100%;
+    height: 5px;
+}
+#crop-positioner .cutout-top .cutout-handle {
+    border-bottom-width: 1px;
+}
+#crop-positioner .cutout-bottom .cutout-handle {
+    border-top-width: 1px;
+}
+#crop-positioner .cutout-left .cutout-handle,
+#crop-positioner .cutout-right .cutout-handle {
+    width: 5px;
+    height: 100%;
+}
+#crop-positioner .cutout-left .cutout-handle {
+    border-right-width: 1px;
+}
+#crop-positioner .cutout-right .cutout-handle {
+    border-left-width: 1px;
+}

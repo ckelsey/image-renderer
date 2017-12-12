@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<title ng-bind="utilities.getPageTitle()"></title>
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="stylesheet" href="image-renderer.min.css" />
+	<style>
+		html {
+			background-color: #eee;
+			color: #555;
+		}
+
+		body {
+			font-family: sans-serif;
+			margin: 0px;
+		}
+
+		img {
+			width: 70px;
+			vertical-align: middle;
+			display: inline-block;
+			margin: 0px 7px;
+		}
+
+		p {
+			font-size: 12px;
+		}
+
+		#canvas_outer {
+			width: 100vw;
+			height: 70vh;
+			max-width: 100%;
+			position: relative;
+		}
+
+		#canvas_wrapper {
+			width: 100%;
+			height: 100%;
+		}
+
+		#window.imageRenderer.cropper {
+			width: 100%;
+			height: 100%;
+			position: absolute;
+			top: 0px;
+			left: 0px;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="canvas_outer">
+		<div id="canvas_wrapper"></div>
+	</div>
+
+	<div>
+		<button id="2d" class="image">2D</button>
+		<button id="3d" class="image">3D</button>
+		<button id="360" class="image">360</button>
+		<button id="vr" class="image">VR</button>
+		<button id="super" class="image">Super res</button>
+		<span>
+			<label>Show crop</label>
+			<input type="checkbox" id="showCrop">
+		</span>
+	<div>
+	<div id="statusMessage"></div>
+	<div id="dimensions" style="display: flex; align-items: center; justify-content: space-evenly; background: #dcdcdc;">
+		<p>Pan:
+			<b id="pan"></b>
+		</p>
+		<p>Tilt:
+			<b id="tilt"></b>
+		</p>
+		<p>Zoom:
+			<b id="zoom"></b>
+		</p>
+		<p>View width:
+			<b id="view_width"></b>
+		</p>
+		<p>View height:
+			<b id="view_height"></b>
+		</p>
+		<p>Crop X:
+			<b id="x">10%</b>
+		</p>
+		<p>Crop Y:
+			<b id="y">10%</b>
+		</p>
+		<p>Crop Width:
+			<b id="w">10%</b>
+		</p>
+		<p>Crop Height:
+			<b id="h">10%</b>
+		</p>
+		<p>
+			<button id="download_screen">Download screenshot</button>
+		</p>
+	</div>
+	<script src="image-renderer.min.js"></script>
+	<script>
+		var showCrop = document.getElementById("showCrop")
+		var input = document.getElementById("file_input")
+		var statusMessage = document.getElementById("statusMessage")
+		var panText = document.getElementById("pan")
+		var tiltText = document.getElementById("tilt")
+		var zoomText = document.getElementById("zoom")
+		var viewWidthText = document.getElementById("view_width")
+		var viewHeightText = document.getElementById("view_height")
+		var xText = document.getElementById("x")
+		var yText = document.getElementById("y")
+		var wText = document.getElementById("w")
+		var hText = document.getElementById("h")
+		var dimensions = document.getElementById("dimensions")
+		var images = document.getElementById("images")
+		var cropX, cropY, cropW, cropH, viewH, viewW, pan, tilt, zoom
+		var downloadEventAdded, method
+
+		function drawCanvas(id) {
+			var canvasWrapper = document.getElementById("canvas_wrapper")
+			var new_canvasWrapper = canvasWrapper.cloneNode(true);
+			canvasWrapper.parentNode.replaceChild(new_canvasWrapper, canvasWrapper);
+
+			switch(id){
+				case "2d":
+					method = window.imageRenderer.init({
+						preview: "https://images.nvidia.com/ansel/images/ansel-images/cWFhZG1pbjE1MDc3NTUxNTc3ODc0NjQzMjU1_small.jpg",
+						image: "https://images.nvidia.com/ansel/images/ansel-images/cWFhZG1pbjE1MDc3NTUxNTc3ODc0NjQzMjU1_large.jpg",
+						crop: showCrop.checked ? {} : false,
+						element: document.getElementById("canvas_wrapper")
+					})
+					break;
+
+				case "super":
+				method = window.imageRenderer.init({
+					preview: "https://images.nvidia.com/ansel/images/ansel-images/Y2tsc3l0ZXN0ZXIyMTUwNzEyNjE4OTYzMjMzMTI1ODky_small.jpg",
+					image: "https://images.nvidia.com/ansel/images/ansel-images/Y2tsc3l0ZXN0ZXIyMTUwNzEyNjE4OTYzMjMzMTI1ODky_large.jpg",
+					crop: showCrop.checked ? {} : false,
+					element: document.getElementById("canvas_wrapper")
+				})
+				break;
+
+				case "3d":
+					method = window.imageRenderer.init({
+						preview: "https://images.nvidia.com/ansel/images/ansel-images/Um9oaXRHNzE1MTI0NDkxOTU5MDMyNzA1NTY1_small.jpg",
+						image: "https://images.nvidia.com/ansel/images/ansel-images/Um9oaXRHNzE1MTI0NDkxOTU5MDMyNzA1NTY1_large.jpg",
+						crop: showCrop.checked ? {} : false,
+						element: document.getElementById("canvas_wrapper"),
+						"3D":true
+					})
+					break;
+
+				case "360":
+					method = window.imageRenderer.init({
+						preview: "https://images.nvidia.com/ansel/images/ansel-images/YWR1bW15NTMyMTUxMjcxNzIwNzU5MDk0NjUwNjA_small.jpg",
+						image: "https://images.nvidia.com/ansel/images/ansel-images/YWR1bW15NTMyMTUxMjcxNzIwNzU5MDk0NjUwNjA_vr.jpg",
+						crop: showCrop.checked ? {} : false,
+						element: document.getElementById("canvas_wrapper"),
+						"360": true
+					})
+					break;
+
+				case "vr":
+					method = window.imageRenderer.init({
+						preview: "https://images.nvidia.com/ansel/images/ansel-images/Um9oaXRHNzE1MTE5MzQ5MDM4OTM1OTYzMjkw_small.jpg",
+						image: "https://images.nvidia.com/ansel/images/ansel-images/Um9oaXRHNzE1MTE5MzQ5MDM4OTM1OTYzMjkw_vr.jpg",
+						crop: showCrop.checked ? {} : false,
+						element: document.getElementById("canvas_wrapper"),
+						"360": true,
+						"3D":true
+					})
+					break;
+			}
+
+			statusMessage.textContent = "Drawing"
+
+			method.then(function (onUpdate) {
+
+				statusMessage.textContent = ""
+				dimensions.style.display = "flex"
+
+				onUpdate(function (data) {
+
+					pan = panText.textContent = data.pan.toFixed(2)
+					tilt = tiltText.textContent = data.tilt.toFixed(2)
+					zoom = zoomText.textContent = data.zoom.toFixed(2)
+					viewHeight = viewHeightText.textContent = Math.round(data.viewHeight)
+					viewWidth = viewWidthText.textContent = Math.round(data.viewWidth)
+				})
+
+				// var cropData = window.imageRenderer.cropper.getCoordinates()
+				// xText.textContent = cropX = Math.round(cropData.x)
+				// yText.textContent = cropY = Math.round(cropData.y)
+				// wText.textContent = cropWidth = Math.round(cropData.width)
+				// hText.textContent = cropHeight = Math.round(cropData.height)
+
+				// window.imageRenderer.cropper.onUpdate(function (data) {
+				// 	xText.textContent = cropX = Math.round(data.x)
+				// 	yText.textContent = cropY = Math.round(data.y)
+				// 	wText.textContent = cropWidth = Math.round(data.width)
+				// 	hText.textContent = cropHeight = Math.round(data.height)
+				// })
+
+				// window.imageRenderer.cropper.show()
+
+			})
+		}
+
+		var buttons = document.querySelectorAll("button.image");
+
+		for(var i=0;i<buttons.length;i++){
+			buttons[i].addEventListener('click', function(){
+				drawCanvas(this.id)
+			}, false)
+		}
+
+		document.getElementById("download_screen").addEventListener("click", function () {
+			window.imageRenderer.cropper.screenshotDownload()
+		})
+
+		showCrop.addEventListener("change", function(){
+			if(this.checked){
+				window.imageRenderer.cropper.init(document.getElementById("canvas_wrapper"))
+			}else{
+				window.imageRenderer.cropper.destroy()
+			}
+		});
+
+	</script> </body>
+
+</html>
