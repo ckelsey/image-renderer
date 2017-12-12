@@ -1,4 +1,4 @@
-#Image renderer
+# Image renderer
 
 **init(data)** - Initializes a renderer. Expects an object with the following properties:
   * **element** : Canvas DOM element (required)
