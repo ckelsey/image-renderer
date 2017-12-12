@@ -171,7 +171,7 @@ window.imageRenderer.cropper = {
 		self.onUpdateCallbacks = []
 		self.element = el
 		self.canvas = el.querySelector("canvas")
-		self.element.append(self.container)
+		self.element.appendChild(self.container)
 		self.data.elements = {
 			north: self.container.querySelector("#north-handle"),
 			south: self.container.querySelector("#south-handle"),
@@ -340,7 +340,7 @@ window.imageRenderer.cropper = {
 
 	destroy: function () {
 		var self = window.imageRenderer.cropper
-		if (self.container) {
+		if (self.container && self.container.parentNode) {
 			self.container.parentNode.removeChild(self.container)
 		}
 	},

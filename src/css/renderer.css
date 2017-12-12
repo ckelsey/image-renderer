@@ -44,6 +44,7 @@
 [imagerenderer="true"] button svg {
     fill: currentColor;
     box-sizing: border-box;
+    height: 21px;
 }
 [imagerenderer="true"] .renderer-progressbar {
     display: block;
@@ -56,6 +57,9 @@
     background: #76b900;
     z-index: 99999999;
     transition: opacity .5s;
+}
+[imagerenderer="true"] div.buttonWrapper{
+    max-height: 40px;
 }
 #crop-positioner {
     z-index: 9999999;

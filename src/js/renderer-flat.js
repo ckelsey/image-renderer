@@ -219,6 +219,7 @@ window.imageRenderer.methods.renderFlat = function (data) {
 			if (!fullscreenButton) {
 
 				var buttonWrapper = document.createElement("div");
+				buttonWrapper.classList.add("buttonWrapper")
 				canvasWrapper.appendChild(buttonWrapper);
 
 				if (is3D && canDoVR) {
