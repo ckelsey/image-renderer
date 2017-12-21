@@ -9,7 +9,7 @@
 	<link rel="stylesheet" href="image-renderer.min.css" />
 	<style>
 		html {
-			background-color: #eee;
+			background-color: #333;
 			color: #555;
 		}
 
@@ -34,6 +34,8 @@
 			height: 70vh;
 			max-width: 100%;
 			position: relative;
+			padding: 50px;
+			box-sizing: border-box;
 		}
 
 		#canvas_wrapper {
@@ -97,7 +99,10 @@
 			<b id="h"></b>
 		</p>
 		<p>
-			<button id="download_screen">Download screenshot</button>
+			<button id="download_screen">Save screen</button>
+		</p>
+		<p>
+			<button id="download_file">Save file</button>
 		</p>
 	</div>
 	<script src="image-renderer.min.js"></script>
@@ -136,7 +141,7 @@
 
 				case "super":
 				method = window.imageRenderer.init({
-					preview: "https://images.nvidia.com/ansel/images/ansel-images/Y2tsc3l0ZXN0ZXIyMTUwNzEyNjE4OTYzMjMzMTI1ODky_small.jpg",
+					preview: "/Y2tsc3l0ZXN0ZXIyMTUwNzEyNjE4OTYzMjMzMTI1ODky_small.jpg",
 					image: "https://images.nvidia.com/ansel/images/ansel-images/Y2tsc3l0ZXN0ZXIyMTUwNzEyNjE4OTYzMjMzMTI1ODky_large.jpg",
 					crop: showCrop.checked ? {} : false,
 					element: document.getElementById("canvas_wrapper")
@@ -177,8 +182,6 @@
 
 			statusMessage.textContent = "Drawing"
 
-			console.log(method);
-
 			method.then(function () {
 
 				statusMessage.textContent = ""
@@ -195,7 +198,7 @@
 				})
 
 
-				// window.imageRenderer.cropper.show()
+				// window.imageRenderer.cropper.init(document.getElementById("canvas_wrapper"), { minWidth: 100, minHeight: 100, maxWidth: 600 })
 
 			})
 		}
@@ -210,6 +213,18 @@
 
 		document.getElementById("download_screen").addEventListener("click", function () {
 			window.imageRenderer.cropper.screenshotDownload()
+		})
+
+		document.getElementById("download_file").addEventListener("click", function () {
+			window.imageRenderer.cropper.setOptions({"maxWidth": 600})
+			window.imageRenderer.cropper.screenshotFile(function(file){
+				var url = window.URL.createObjectURL(file);
+				var a = document.createElement("a")
+				a.href = url;
+				a.download = "test";
+				a.click();
+				window.URL.revokeObjectURL(url);
+			})
 		})
 
 		showCrop.addEventListener("change", function(){

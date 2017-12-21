@@ -8,38 +8,49 @@
     background-repeat: no-repeat;
     background-size: 40px;
     background-position: 50% 50%;
-    cursor: grab;
-    cursor: -webkit-grab;
-    cursor: -moz-grab;
-    cursor: -ms-grab;
 }
+
 [imagerenderer="true"].fullscreen {
-    position: fixed;
+    position: fixed !important;
     top: 0px;
     left: 0px;
+    z-index: 99999;
 }
+[imagerenderer="true"] canvas{
+    padding: 0px !important;
+    cursor: default !important;
+}
+
+[imagerenderer="true"] .canvas-container{
+    padding: 0px;
+}
+
 [imagerenderer="true"] div {
     display: flex;
     width: 100%;
     position: absolute;
     bottom: 0px;
-    z-index: 99999;
     pointer-events: all;
     justify-content: flex-end;
     padding: 4px 10px;
     box-sizing: border-box;
 }
-[imagerenderer="true"] button {
+[imagerenderer="true"] .buttonWrapper>button {
     position: relative;
-    width: 16px;
+    width: 35px;
+    height: 21px;
     color: #fff;
     opacity: .7;
+    padding: 0;
+    margin: 7px;
+    right: 0px;
+}
+
+[imagerenderer="true"] .buttonWrapper button {
     background: transparent;
-    border: none;
+    border: 0;
     outline: none !important;
     box-sizing: border-box;
-    padding: 0px;
-    margin: 7px;
 }
 [imagerenderer="true"] button svg {
     fill: currentColor;
@@ -55,11 +66,14 @@
     width: 0%;
     padding: 0px;
     background: #76b900;
-    z-index: 99999999;
     transition: opacity .5s;
 }
 [imagerenderer="true"] div.buttonWrapper{
     max-height: 40px;
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    width: 100%;
 }
 #crop-positioner {
     z-index: 9999999;
@@ -99,7 +113,7 @@ padding: 0px;
     pointer-events: all;
 }
 #crop-positioner table td#revealed-space {
-    pointer-events: none;
+    pointer-events: all;
 }
 #crop-positioner table td .handle {
     background: rgba(200, 200, 200, .75);
@@ -181,4 +195,89 @@ padding: 0px;
 }
 #crop-positioner .cutout-right .cutout-handle {
     border-left-width: 1px;
+}
+
+
+[imagerenderer="true"] .zoom-controls{
+    flex-direction: column;
+    width: 35px;
+    height: 35px;
+    top: 3px;
+    align-items: center;
+    position: relative;
+    transition: all .5s;
+}
+
+[imagerenderer="true"] .zoom-controls:hover,
+[imagerenderer="true"] .zoom-controls.mobile{
+    height: 125px;
+    top: -94px;
+}
+
+[imagerenderer="true"] .zoom-controls button{
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    width: 35px;
+    height: 21px;
+    text-align: center;
+    padding: 0;
+    box-sizing: border-box;
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    font-weight: 900;
+    opacity: 0;
+    pointer-events: none;
+    margin: 0px;
+    transition: all .5s;
+}
+
+[imagerenderer="true"] .zoom-controls button.zoom-plus{
+    opacity: 1;
+    pointer-events: all;
+}
+
+[imagerenderer="true"] .zoom-controls:hover button.zoom-plus,
+[imagerenderer="true"] .zoom-controls.mobile button.zoom-plus,
+[imagerenderer="true"] .zoom-controls:hover button,
+[imagerenderer="true"] .zoom-controls.mobile button{
+    opacity: 1;
+    pointer-events: all;
+}
+
+[imagerenderer="true"] .zoom-controls button svg{
+    width: 100%;
+    height: 100%;
+}
+
+[imagerenderer="true"] .zoom-controls .zoom-range{
+    flex-grow: 1;
+    display: block;
+    width: 3px;
+    padding: 0px;
+    position: relative;
+    background: rgba(255,255,255,.75);
+    margin: 5px 0px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .5s;
+}
+
+[imagerenderer="true"] .zoom-controls:hover .zoom-range,
+[imagerenderer="true"] .zoom-controls.mobile .zoom-range{
+    opacity: 1;
+    pointer-events: all;
+}
+
+[imagerenderer="true"] .zoom-controls .zoom-range-handle{
+    width: 13px;
+    height: 10px;
+    background: #fff;
+    position: absolute;
+    display: block;
+    padding: 0px;
+    left: -5px;
+    transform: translateY(5px);
+    cursor: ns-resize;
 }

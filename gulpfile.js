@@ -30,14 +30,14 @@ function css() {
 }
 
 var js = [
-	'lib/promise.polyfill.js',
-	'lib/gl-matrix-min.js',
-	'lib/wglu-program.js',
-	'lib/webvr-polyfill.js',
-	'lib/fabric.min.js',
+	'lib/promise.js',
+	'lib/matrix.js',
+	'lib/wglu.js',
+	'lib/webvr.js',
+	'lib/fabric.js',
 	'lib/three.js',
-	'lib/device-controls.js',
-	'lib/vr-panorama.js',
+	'lib/device.js',
+	'lib/pano.js',
 	'src/js/renderer.js',
 	'src/js/renderer-vr.js',
 	'src/js/renderer-360.js',
