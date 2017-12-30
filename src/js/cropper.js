@@ -1,34 +1,17 @@
-if (!window.HTMLCanvasElement.prototype.toBlob) {
-	Object.defineProperty(window.HTMLCanvasElement.prototype, 'toBlob', {
-		value: function (callback, type, quality) {
-			var canvas = this
-			setTimeout(function () {
-
-				var binStr = window.atob(canvas.toDataURL(type, quality).split(',')[1]),
-					len = binStr.length,
-					arr = new Uint8Array(len)
-
-				for (var i = 0; i < len; i++) {
-					arr[i] = binStr.charCodeAt(i)
-				}
-
-				callback(new window.Blob([arr], { type: type || 'image/png' }))
-			})
-		}
-	})
-}
-
 window.imageRenderer.cropper = {
 	ver: "2.0.0",
 	element: null,
-	options: {},
+	options: {
+		minHeight: 400,
+		minWidth: 600
+	}, //minWidth, minHeight, circle, maxWidth
 	data: {
 		mousemove: false,
 		positions: {
-			y1: 5,
-			y2: 5,
-			x1: 5,
-			x2: 5
+			y1: 0,
+			y2: 0,
+			x1: 0,
+			x2: 0
 		},
 		elements: {}
 	},
@@ -41,14 +24,12 @@ window.imageRenderer.cropper = {
 
 	getCoordinates: function () {
 		var self = window.imageRenderer.cropper
-		var w = self.element.offsetWidth
-		var h = self.element.offsetHeight
 
 		var data = {
-			x: (self.data.positions.x1 / 100) * w,
-			y: (self.data.positions.y1 / 100) * h,
-			width: w - (((self.data.positions.x1 + self.data.positions.x2) / 100) * w),
-			height: h - (((self.data.positions.y1 + self.data.positions.y2) / 100) * h)
+			x: self.data.positions.x1,
+			y: self.data.positions.x2,
+			width: self.data.positions.x2 - self.data.positions.x1,
+			height: self.data.positions.y2 - self.data.positions.y1
 		}
 
 		for (var p in data) {
@@ -154,226 +135,65 @@ window.imageRenderer.cropper = {
 			h = h * (self.options.maxWidth / w)
 			w = self.options.maxWidth
 		}
+
 		ctx.canvas.width = w
 		ctx.canvas.height = h
 		ctx.drawImage(self.canvas, coords.x, coords.y, coords.width, coords.height, 0, 0, w, h)
 		return ctx.canvas
 	},
 
-	/* TODO THIS IS TERRIBLY COMPLICATED AND HARD TO READ, NEEDS REFACTOR */
-	setPositions: function (x, y, mode, justBoundaries) {
+	setPositions: function (x1, x2, y1, y2) {
 		var self = window.imageRenderer.cropper
-		var handleHeight = (window.document.getElementById('north-handle').offsetHeight / self.element.offsetHeight) * 100
-		var handleWidth = (window.document.getElementById('west-handle').offsetWidth / self.element.offsetWidth) * 100
 
-		var currentCoords = self.getCoordinates();
-		var height = (((y - (handleHeight / 2)) - self.element.getBoundingClientRect().top) / self.element.offsetHeight) * 100 || 1
-		var width = ((x - (handleWidth / 2) - self.element.getBoundingClientRect().left) / self.element.offsetWidth) * 100 || 1
-
-		function checkHeight(y1, y2) {
-			if (y1 < 1 || y2 < 1) {
-				return false
+		function checkPositions() {
+			if (x1 < 5) {
+				x1 = 5
 			}
 
-			if (!self.options || !self.options.minHeight) {
-				return true
-			}
-			return self.element.offsetHeight - (((y1 + y2) / 100) * self.element.offsetHeight) > self.options.minHeight
-		}
-
-		function checkWidth(x1, x2) {
-			if (x1 < 1 || x2 < 1) {
-				return false
+			if (x2 > self.container.offsetWidth - 5) {
+				x2 = self.container.offsetWidth - 5
 			}
 
-			if (!self.options || !self.options.minWidth) {
-				return true
-			}
-			return self.element.offsetWidth - (((x1 + x2) / 100) * self.element.offsetWidth) > self.options.minWidth
-		}
-
-		function checkNorth(_height) {
-			var _y = (((_height * currentCoords.pixelRatio) / 100) * self.element.offsetHeight)
-			var max = ((currentCoords.tilt / self.element.offsetHeight) * 100) / currentCoords.pixelRatio
-
-			if (!max || isNaN(max) || max < 1) {
-				max = 1
+			if (y1 < 5) {
+				y1 = 5
 			}
 
-			return { pass: currentCoords.tilt < _y, max: max }
-		}
-
-		function checkSouth(_height) {
-			var _y = (self.element.offsetHeight * currentCoords.pixelRatio) - ((((_height * currentCoords.pixelRatio) / 100) * self.element.offsetHeight) + currentCoords.tilt)
-			var max = (((self.element.offsetHeight * currentCoords.pixelRatio) - (currentCoords.renderHeight + currentCoords.tilt)) / (self.element.offsetHeight * currentCoords.pixelRatio)) * 100
-
-			if (!max || isNaN(max) || max < 1) {
-				max = 1
-			}
-
-			return { pass: _y < currentCoords.renderHeight, max: max }
-		}
-
-		function checkEast(_width) {
-			var _x = (self.element.offsetWidth * currentCoords.pixelRatio) - ((((_width * currentCoords.pixelRatio) / 100) * self.element.offsetWidth) + currentCoords.pan)
-			var max = (((self.element.offsetWidth * currentCoords.pixelRatio) - (currentCoords.renderWidth + currentCoords.pan)) / (self.element.offsetWidth * currentCoords.pixelRatio)) * 100
-
-			if (!max || isNaN(max) || max < 1) {
-				max = 1
-			}
-
-			return { pass: currentCoords.renderWidth > _x, max: max }
-		}
-
-		function checkWest(_width) {
-			var _x = (((_width * currentCoords.pixelRatio) / 100) * self.element.offsetWidth)
-			var max = ((currentCoords.pan / self.element.offsetWidth) * 100) / currentCoords.pixelRatio
-
-			if (!max || isNaN(max) || max < 1) {
-				max = 1
-			}
-
-			return { pass: currentCoords.pan < _x, max: max }
-		}
-
-		if (mode === 'north-handle') {
-
-			if (checkNorth(height).pass) {
-				if (!justBoundaries && checkHeight(height, self.data.positions.y2)) {
-					self.data.positions.y1 = height
-					self.container.querySelector("#north-space").style.height = self.data.positions.y1 + "%"
-				}
-			} else {
-				// self.data.positions.y1 = checkNorth(height).max
-				// self.container.querySelector("#north-space").style.height = self.data.positions.y1 + "%"
-			}
-
-		} else if (mode === 'south-handle') {
-
-			height = 100 - height
-
-			if (checkSouth(height).pass) {
-				if (!justBoundaries && checkHeight(height, self.data.positions.y1)) {
-					self.data.positions.y2 = height
-					self.container.querySelector("#south-space").style.height = self.data.positions.y2 + "%"
-				}
-			} else {
-				self.data.positions.y2 = checkSouth(height).max
-				self.container.querySelector("#south-space").style.height = self.data.positions.y2 + "%"
-			}
-
-		} else if (mode === 'east-handle') {
-
-			width = 100 - width
-
-			if (checkEast(width).pass) {
-				if (!justBoundaries && checkWidth(width, self.data.positions.x1)) {
-					self.data.positions.x2 = width
-					self.container.querySelector("#east-space").style.width = self.data.positions.x2 + "%"
-				}
-			} else {
-				self.data.positions.x2 = checkEast(width).max
-				self.container.querySelector("#east-space").style.width = self.data.positions.x2 + "%"
-			}
-
-		} else if (mode === 'west-handle') {
-
-			if (checkWest(width).pass) {
-				if (!justBoundaries && checkWidth(width, self.data.positions.x2)) {
-					self.data.positions.x1 = width
-					self.container.querySelector("#west-space").style.width = self.data.positions.x1 + "%"
-				}
-			} else {
-				self.data.positions.x1 = checkWest(width).max
-				self.container.querySelector("#west-space").style.width = self.data.positions.x1 + "%"
-			}
-
-
-		} else if (mode === 'north-east-handle') {
-
-			if (checkNorth(height).pass) {
-				if (!justBoundaries && checkHeight(height, self.data.positions.y2)) {
-					self.data.positions.y1 = height
-					self.container.querySelector("#north-space").style.height = self.data.positions.y1 + "%"
-				}
-			} else {
-				self.data.positions.y1 = checkNorth(height).max
-				self.container.querySelector("#north-space").style.height = self.data.positions.y1 + "%"
-			}
-
-			width = 100 - width
-
-			if (checkEast(width).pass) {
-				if (!justBoundaries && checkWidth(width, self.data.positions.x1)) {
-					self.data.positions.x2 = width
-					self.container.querySelector("#east-space").style.width = self.data.positions.x2 + "%"
-				}
-			} else {
-				self.data.positions.x2 = checkEast(width).max
-				self.container.querySelector("#east-space").style.width = self.data.positions.x2 + "%"
-			}
-
-		} else if (mode === 'north-west-handle') {
-			if (checkNorth(height).pass) {
-				if (!justBoundaries && checkHeight(height, self.data.positions.y2)) {
-					self.data.positions.y1 = height
-					self.container.querySelector("#north-space").style.height = self.data.positions.y1 + "%"
-				}
-			} else {
-				self.data.positions.y1 = checkNorth(height).max
-				self.container.querySelector("#north-space").style.height = self.data.positions.y1 + "%"
-			}
-
-			if (checkWest(width).pass) {
-				if (!justBoundaries && checkWidth(width, self.data.positions.x2)) {
-					self.data.positions.x1 = width
-					self.container.querySelector("#west-space").style.width = self.data.positions.x1 + "%"
-				}
-			} else {
-				self.data.positions.x1 = checkWest(width).max
-				self.container.querySelector("#west-space").style.width = self.data.positions.x1 + "%"
-			}
-		} else if (mode === 'south-east-handle') {
-			width = 100 - width
-			height = 100 - height
-
-			if (checkSouth(height).pass) {
-				if (!justBoundaries && checkHeight(height, self.data.positions.y1)) {
-					self.data.positions.y2 = height
-					self.container.querySelector("#south-space").style.height = self.data.positions.y2 + "%"
-				}
-			} else {
-				self.data.positions.y2 = checkSouth(height).max
-				self.container.querySelector("#south-space").style.height = self.data.positions.y2 + "%"
-			}
-
-			if (checkEast(width).pass) {
-				if (!justBoundaries && checkWidth(width, self.data.positions.x1)) {
-					self.data.positions.x2 = width
-					self.container.querySelector("#east-space").style.width = self.data.positions.x2 + "%"
-				}
-			} else {
-				self.data.positions.x2 = checkEast(width).max
-				self.container.querySelector("#east-space").style.width = self.data.positions.x2 + "%"
-			}
-		} else if (mode === 'south-west-handle') {
-			height = 100 - height
-
-			if (checkSouth(height).pass) {
-				if (!justBoundaries && checkHeight(height, self.data.positions.y1)) {
-					self.data.positions.y2 = height
-					self.container.querySelector("#south-space").style.height = self.data.positions.y2 + "%"
-				}
-			} else {
-				self.data.positions.y2 = checkSouth(height).max
-				self.container.querySelector("#south-space").style.height = self.data.positions.y2 + "%"
-			}
-
-			if (checkWidth(width, self.data.positions.x2)) {
-				self.data.positions.x1 = width
-				self.container.querySelector("#west-space").style.width = self.data.positions.x1 + "%"
+			if (y2 > self.container.offsetHeight - 5) {
+				y2 = self.container.offsetHeight - 5
 			}
 		}
+
+		checkPositions()
+
+		if (self.options.minWidth && x2 - x1 < self.options.minWidth) {
+			x2 = x1 + self.options.minWidth
+
+			if (x2 > self.container.offsetWidth - 5) {
+				x2 = self.container.offsetWidth - 5
+				x1 = x2 - self.options.minWidth
+			}
+		}
+
+		if (self.options.minHeight && y2 - y1 < self.options.minHeight) {
+			y2 = y1 + self.options.minHeight
+
+			if (y2 > self.container.offsetHeight - 5) {
+				y2 = self.container.offsetHeight - 5
+				y1 = y2 - self.options.minHeight
+			}
+		}
+
+		checkPositions()
+
+		self.data.positions.x1 = x1
+		self.data.positions.x2 = x2
+		self.data.positions.y1 = y1
+		self.data.positions.y2 = y2
+
+		self.container.querySelector("#north-space").style.height = ((self.data.positions.y1 / self.container.offsetHeight) * 100) + "%"
+		self.container.querySelector("#south-space").style.height = (((self.container.offsetHeight - self.data.positions.y2) / self.container.offsetHeight) * 100) + "%"
+		self.container.querySelector("#west-space").style.width = ((self.data.positions.x1 / self.container.offsetWidth) * 100) + "%"
+		self.container.querySelector("#east-space").style.width = (((self.container.offsetWidth - self.data.positions.x2) / self.container.offsetWidth) * 100) + "%"
 
 		self.onUpdateCallbacks.forEach(function (cb) {
 			cb(self.getCoordinates())
@@ -382,11 +202,13 @@ window.imageRenderer.cropper = {
 
 	init: function (el, options) {
 		var self = window.imageRenderer.cropper
-		self.options = options
+		self.options = options || {}
 		self.container = window.document.getElementById("crop-positioner")
+
 		if (self.container) {
 			self.container.parentNode.removeChild(self.container)
 		}
+
 		self.container = window.document.createElement("div")
 		self.container.id = "crop-positioner"
 		self.container.innerHTML = self.createHtml()
@@ -405,29 +227,37 @@ window.imageRenderer.cropper = {
 			southwest: self.container.querySelector("#south-west-handle")
 		}
 
-		function checkBounds() {
-			var stats = window.imageRenderer.stats
-
-			if (stats.ready) {
-				self.setPositions(
-					self.container.offsetWidth * (self.data.positions.x1 / 100) + self.container.getBoundingClientRect().left,
-					self.container.offsetHeight * (self.data.positions.y1 / 100) + self.container.getBoundingClientRect().top,
-					"north-west-handle",
-					true
-				)
-
-				self.setPositions(
-					self.container.offsetWidth - (self.container.offsetWidth * (self.data.positions.x2 / 100)) + self.container.getBoundingClientRect().left,
-					(self.container.offsetHeight - (self.container.offsetHeight * (self.data.positions.y2 / 100))) + self.container.getBoundingClientRect().top,
-					"south-east-handle",
-					true
-				)
-			}
-
-			window.requestAnimationFrame(checkBounds)
+		if (self.options.minWidth && self.element) {
+			self.element.style.minWidth = self.options.minWidth + "px"
 		}
 
-		checkBounds()
+		if (self.options.minHeight && self.element) {
+			self.element.style.minHeight = self.options.minHeight + "px"
+		}
+
+		function initCropper() {
+			var stats = window.imageRenderer.stats
+			var currentCoords = self.getCoordinates();
+
+
+			if (stats.ready) {
+				var percentageX = self.options.minWidth ? ((currentCoords.renderWidth / currentCoords.pixelRatio) - self.options.minWidth) / 2 : (currentCoords.renderWidth * 0.1) / currentCoords.pixelRatio
+				var percentageY = self.options.minHeight ? ((currentCoords.renderHeight / currentCoords.pixelRatio) - self.options.minHeight) / 2 : (currentCoords.renderHeight * 0.1) / currentCoords.pixelRatio
+
+				self.setPositions(
+					percentageX,
+					((currentCoords.renderWidth / currentCoords.pixelRatio) - percentageX) + ((currentCoords.viewWidth - currentCoords.renderWidth) / currentCoords.pixelRatio),
+					percentageY,
+					((currentCoords.renderHeight / currentCoords.pixelRatio) - percentageY) + ((currentCoords.viewHeight - currentCoords.renderHeight) / currentCoords.pixelRatio)
+				)
+
+				self.resize()
+			} else {
+				window.requestAnimationFrame(initCropper)
+			}
+		}
+
+		initCropper()
 
 		function mouseDown(e) {
 			e.preventDefault()
@@ -442,8 +272,29 @@ window.imageRenderer.cropper = {
 				if (!self.data.mousemove) { return }
 				e.stopPropagation()
 				e.preventDefault()
-				console.log(e.x);
-				self.setPositions(e.x, e.y, mode)
+				var box = self.container.getBoundingClientRect(),
+					x1 = self.data.positions.x1,
+					x2 = self.data.positions.x2,
+					y1 = self.data.positions.y1,
+					y2 = self.data.positions.y2
+
+				if (mode.toString().indexOf("north") > -1 || mode.toString().indexOf("south") > -1) {
+					if (mode.toString().indexOf("north") > -1) {
+						y1 = e.y - box.top
+					} else {
+						y2 = e.y - box.top
+					}
+				}
+
+				if (mode.toString().indexOf("west") > -1 || mode.toString().indexOf("east") > -1) {
+					if (mode.toString().indexOf("west") > -1) {
+						x1 = e.x - box.left
+					} else {
+						x2 = e.x - box.left
+					}
+				}
+
+				self.setPositions(x1, x2, y1, y2)
 			}
 
 			function clear() {
@@ -466,51 +317,65 @@ window.imageRenderer.cropper = {
 
 		self.sizeWatcher = window.requestAnimationFrame(self.position)
 
-		self.getCoordinates()
+		var revealedSpace = window.document.getElementById("revealed-space")
 
-		window.document.getElementById("revealed-space").addEventListener("mousedown", function () {
+		function moveRevealedSpace(e) {
+			e.preventDefault();
+			e.stopPropagation();
+
+			var box = self.container.getBoundingClientRect()
+			var distanceX1 = e.x - self.data.elements.west.getBoundingClientRect().left + (self.data.elements.west.offsetWidth / 2.2)
+			var distanceX2 = (self.data.elements.east.getBoundingClientRect().left + (self.data.elements.east.offsetWidth / 2.2)) - e.x
+			var distanceY1 = e.y - self.data.elements.north.getBoundingClientRect().top + (self.data.elements.north.offsetHeight / 2.2)
+			var distanceY2 = (self.data.elements.south.getBoundingClientRect().top + (self.data.elements.south.offsetHeight / 2.2)) - e.y
+
 			function mousemove(e) {
 				e.preventDefault();
 				e.stopPropagation();
 
-				var grabX = e.x - this.offsetLeft
-				console.log(e.x - (e.target.offsetWidth / 2));
 				self.setPositions(
-					e.x - (this.offsetWidth / 2),
-					e.y - (this.offsetHeight / 2),
-					"west-handle"
+					(e.x - box.left) + (self.data.elements.west.offsetWidth / 2.2) - distanceX1,
+					(e.x - box.left) + (self.data.elements.east.offsetWidth / 2.2) + distanceX2,
+					(e.y - box.top) + (self.data.elements.north.offsetHeight / 2.2) - distanceY1,
+					(e.y - box.top) + (self.data.elements.south.offsetHeight / 2.2) + distanceY2
 				)
-
-				// self.setPositions(
-				// 	e.x + (this.offsetWidth / 2),
-				// 	e.y + (this.offsetHeight / 2),
-				// 	"south-east-handle",
-				// 	true
-				// )
 			}
 
 			window.addEventListener("mousemove", mousemove, false)
 			window.addEventListener("mouseup", function () {
 				window.removeEventListener("mousemove", mousemove, false)
-			}, false)
+			}, true)
+		}
 
-		}, false)
+		revealedSpace.addEventListener("mousedown", moveRevealedSpace, true)
+
+		window.addEventListener("resize", self.resize, false)
+	},
+
+	resize: function () {
+		var self = window.imageRenderer.cropper
+		self.setPositions(self.data.positions.x1, self.data.positions.x2, self.data.positions.y1, self.data.positions.y2)
 	},
 
 	position: function () {
 		var self = window.imageRenderer.cropper
 
-		if (!self.container) {
+		if (!self.container || !self.element) {
 			return;
 		}
 
-		self.container.style.width = self.element.offsetWidth + "px"
-		self.container.style.height = self.element.offsetHeight + "px"
+		var currentCoords = self.getCoordinates();
+
+		self.container.style.width = (currentCoords.renderWidth / currentCoords.pixelRatio) + "px"
+		self.container.style.height = (currentCoords.renderHeight / currentCoords.pixelRatio) + "px"
+		self.container.style.left = (((currentCoords.viewWidth - currentCoords.renderWidth) / 2) / currentCoords.pixelRatio) + "px"
+		self.container.style.top = (((currentCoords.viewHeight - currentCoords.renderHeight) / 2) / currentCoords.pixelRatio) + "px"
 		self.sizeWatcher = window.requestAnimationFrame(self.position)
 	},
 
 	destroy: function () {
 		var self = window.imageRenderer.cropper
+		window.addEventListener("resize", self.resize, false)
 		if (self.container && self.container.parentNode) {
 			self.container.parentNode.removeChild(self.container)
 		}

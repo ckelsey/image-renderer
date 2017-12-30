@@ -115,6 +115,12 @@ padding: 0px;
 #crop-positioner table td#revealed-space {
     pointer-events: all;
 }
+
+#crop-positioner.circle table td#revealed-space {
+    border-radius: 50%;
+    box-shadow: 0px 0px 500px 60px rgba(0, 0, 0, 0.64);
+    transform: scale(1.1, 1.1);
+}
 #crop-positioner table td .handle {
     background: rgba(200, 200, 200, .75);
     box-shadow: inset 0px 0px 0px 1px rgba(50, 50, 50, .75);
@@ -122,6 +128,7 @@ padding: 0px;
     height: 10px;
     position: relative;
     border-radius: 2px;
+    pointer-events: none;
     transition: transform .2s;
 }
 #crop-positioner table td:hover .handle {
@@ -230,12 +237,15 @@ padding: 0px;
     opacity: 0;
     pointer-events: none;
     margin: 0px;
+    position: absolute;
     transition: all .5s;
 }
 
 [imagerenderer="true"] .zoom-controls button.zoom-plus{
     opacity: 1;
     pointer-events: all;
+    height: 21px;
+    position: relative;
 }
 
 [imagerenderer="true"] .zoom-controls:hover button.zoom-plus,
@@ -244,6 +254,8 @@ padding: 0px;
 [imagerenderer="true"] .zoom-controls.mobile button{
     opacity: 1;
     pointer-events: all;
+    height: 21px;
+    position: relative;
 }
 
 [imagerenderer="true"] .zoom-controls button svg{
@@ -254,30 +266,52 @@ padding: 0px;
 [imagerenderer="true"] .zoom-controls .zoom-range{
     flex-grow: 1;
     display: block;
-    width: 3px;
+    width: 35px;
     padding: 0px;
     position: relative;
-    background: rgba(255,255,255,.75);
-    margin: 5px 0px;
+    margin: 0px;
     opacity: 0;
     pointer-events: none;
+    height: 0px;
+    cursor: ns-resize;
     transition: all .5s;
+}
+
+[imagerenderer="true"] .zoom-controls .zoom-range:before{
+    display: inline-block;
+    width: 3px;
+    background: rgba(255,255,255,.75);
+    margin: 0px auto;
+    height: 0px;
+    content: "";
+    position: absolute;
+    left: calc(50% - 1.5px);
+    transition: all .25s;
 }
 
 [imagerenderer="true"] .zoom-controls:hover .zoom-range,
 [imagerenderer="true"] .zoom-controls.mobile .zoom-range{
     opacity: 1;
+    height: auto;
     pointer-events: all;
+    margin: 5px 0px;
+}
+
+[imagerenderer="true"] .zoom-controls:hover .zoom-range:before{
+    height: 100%;
 }
 
 [imagerenderer="true"] .zoom-controls .zoom-range-handle{
     width: 13px;
-    height: 10px;
+    height: 0px;
     background: #fff;
     position: absolute;
     display: block;
     padding: 0px;
-    left: -5px;
+    left: calc(50% - 7px);
     transform: translateY(5px);
-    cursor: ns-resize;
+}
+
+[imagerenderer="true"] .zoom-controls:hover .zoom-range-handle{
+    height: 10px;
 }

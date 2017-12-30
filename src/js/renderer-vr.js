@@ -1,5 +1,5 @@
 window.imageRenderer.methods.renderVr = function (data) {
-	return new Promise(function (resolve) {
+	return new Promise(function (resolve, reject) {
 		var allowNonVR = data.allowNonVR;
 		var is3D = data["3D"];
 		var canvasWrapper = data.element;
@@ -21,6 +21,7 @@ window.imageRenderer.methods.renderVr = function (data) {
 		var canvas;
 		var img1;
 		var img2;
+		var originalImage;
 		var ctxTop = window.document.createElement("canvas").getContext("2d");
 		var ctxBottom = window.document.createElement("canvas").getContext("2d");
 
@@ -49,7 +50,6 @@ window.imageRenderer.methods.renderVr = function (data) {
 			panorama.render(frameData.leftProjectionMatrix, viewMat);
 
 			gl.viewport(canvas.width * 0.5, 0, canvas.width * 0.5, canvas.height);
-
 			panorama2.render(frameData.rightProjectionMatrix, viewMat);
 
 			vrDisplay.submitFrame();
@@ -60,10 +60,15 @@ window.imageRenderer.methods.renderVr = function (data) {
 			window.imageRenderer.stats.viewWidth = window.imageRenderer.stats.renderWidth = canvasWrapper.offsetWidth * window.devicePixelRatio;
 			window.imageRenderer.stats.viewHeight = window.imageRenderer.stats.renderHeight = canvasWrapper.offsetHeight * window.devicePixelRatio;
 			window.imageRenderer.stats.status = "drawing";
+			window.imageRenderer.stats.type = "vr"
+			window.imageRenderer.stats.canvas = canvas
+			window.imageRenderer.stats.originalImage = originalImage
 		}
 
 		function drawScene() {
+
 			gl.clear(gl.COLOR_BUFFER_BIT || gl.DEPTH_BUFFER_BIT);
+
 			normalSceneFrame = window.requestAnimationFrame(drawScene);
 			vrDisplay.getFrameData(frameData);
 
@@ -77,19 +82,17 @@ window.imageRenderer.methods.renderVr = function (data) {
 
 
 		function positionCanvas() {
-			var btnWrapper = window.document.querySelector(".buttonWrapper")
+			var leftEye = vrDisplay.getEyeParameters("left");
+			var rightEye = vrDisplay.getEyeParameters("right");
+
 			if (isPresenting) {
-
-				if (btnWrapper) { btnWrapper.style.display = "none" }
-
-				var leftEye = vrDisplay.getEyeParameters("left");
-				var rightEye = vrDisplay.getEyeParameters("right");
 				canvas.width = (Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2);
 				canvas.height = (Math.max(leftEye.renderHeight, rightEye.renderHeight));
+				canvas.style.width = "100%";
+				canvas.style.height = "100%";
+				canvas.style.top = "0px";
+				canvas.style.left = "0px";
 			} else {
-
-				if (btnWrapper) { btnWrapper.style.display = "flex" }
-
 				canvas.style.position = "relative";
 				canvas.width = Math.max(canvasWrapper.offsetWidth, canvasWrapper.offsetHeight) * window.devicePixelRatio;
 				canvas.height = Math.max(canvasWrapper.offsetWidth, canvasWrapper.offsetHeight) * window.devicePixelRatio;
@@ -104,6 +107,14 @@ window.imageRenderer.methods.renderVr = function (data) {
 			try {
 				window.cancelAnimationFrame(normalSceneFrame);
 			} catch (e) { }
+
+			var btnWrapper = window.document.querySelector(".buttonWrapper")
+
+			if (btnWrapper) {
+				btnWrapper.parentElement.removeChild(btnWrapper)
+			}
+
+			canvasWrapper.classList.add("fullscreen");
 
 			setTimeout(function () {
 				isPresenting = true;
@@ -145,20 +156,19 @@ window.imageRenderer.methods.renderVr = function (data) {
 		}
 
 		function setImages(img) {
-			if (is3D) {
-				ctxTop.canvas.width = img.naturalWidth;
-				ctxTop.canvas.height = img.naturalHeight / 2;
-				ctxTop.drawImage(img, 0, 0);
+			ctxTop.canvas.width = 4096;
+			ctxTop.canvas.height = 2048;
+			ctxBottom.canvas.width = 4096;
+			ctxBottom.canvas.height = 2048;
+			ctxTop.drawImage(img, 0, 0);
 
-				ctxBottom.canvas.width = img.naturalWidth;
-				ctxBottom.canvas.height = img.naturalHeight / 2;
+			if (is3D || img.width === img.height) {
 				ctxBottom.drawImage(img, 0, -ctxBottom.canvas.height);
-
-				img1 = ctxTop.canvas;
-				img2 = ctxBottom.canvas;
+				img1 = ctxTop.canvas
+				img2 = ctxBottom.canvas
 			} else {
-				img1 = img;
-				img2 = img
+				img1 = ctxTop.canvas
+				img2 = ctxTop.canvas
 			}
 		}
 
@@ -180,6 +190,7 @@ window.imageRenderer.methods.renderVr = function (data) {
 			panorama2 = null;
 			gl = false;
 			canvasWrapper.innerHTML = "";
+			canvasWrapper.classList.remove("fullscreen");
 			frameData = new window.VRFrameData();
 			viewMat = window.mat4.create()
 			canvas = window.document.createElement("canvas");
@@ -194,15 +205,21 @@ window.imageRenderer.methods.renderVr = function (data) {
 			}
 
 			if (img1) {
+				originalImage = img1
 				onNormalScene()
-				window.imageRenderer.createControls(false, true, false, present)
+				window.imageRenderer.createControls({
+					vr: present
+				})
 				return
 			}
 
 			img1 = new window.Image();
 			img2 = new window.Image();
 
+			var hasLoadedControls = false
+
 			window.imageRenderer.initImages(function (_img) {
+				originalImage = _img
 				setImages(_img);
 
 				if (vrDisplay.isPresenting) {
@@ -210,16 +227,25 @@ window.imageRenderer.methods.renderVr = function (data) {
 				} else {
 					onNormalScene();
 				}
+
+				if (!hasLoadedControls) {
+					window.imageRenderer.createControls({
+						vr: present
+					})
+					hasLoadedControls = true
+				}
+
+				resolve();
 			}, function (_img) {
 				setImages(_img);
 				onNormalScene()
-				window.imageRenderer.createControls(false, true, false, present)
-			})
+				window.imageRenderer.createControls({
+					vr: present
+				})
+			}, reject)
 
 			window.addEventListener("resize", positionCanvas, false);
 			window.addEventListener("vrdisplaypresentchange", presentChange, false);
-
-			resolve();
 		}
 
 		if (window.navigator.getVRDisplays) {

@@ -170,8 +170,8 @@
 
 				case "vr":
 					method = window.imageRenderer.init({
-						preview: "https://images.nvidia.com/ansel/images/ansel-images/Um9oaXRHNzE1MTE5MzQ5MDM4OTM1OTYzMjkw_small.jpg",
-						image: "https://images.nvidia.com/ansel/images/ansel-images/Um9oaXRHNzE1MTE5MzQ5MDM4OTM1OTYzMjkw_vr.jpg",
+						preview: "https://s3.amazonaws.com/cktestupload/small_360stereo2.jpg",
+						image: "https://s3.amazonaws.com/cktestupload/large_360stereo2.jpg",
 						crop: showCrop.checked ? {} : false,
 						element: document.getElementById("canvas_wrapper"),
 						"360": true,
@@ -198,7 +198,7 @@
 				})
 
 
-				// window.imageRenderer.cropper.init(document.getElementById("canvas_wrapper"), { minWidth: 100, minHeight: 100, maxWidth: 600 })
+				window.imageRenderer.cropper.init(document.getElementById("canvas_wrapper"), { minWidth: 600, minHeight: 400, maxWidth: 600 })
 
 			})
 		}

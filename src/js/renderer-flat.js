@@ -1,12 +1,12 @@
 window.imageRenderer.methods.renderFlat = function (data) {
-	return new Promise(function (resolve) {
+	return new Promise(function (resolve, reject) {
 		var canDoVR, prevX, prevY, prevW, prevH;
 		var fill = data.fill;
 		var is3D = data["3D"];
 		var isMobile = window.hasOwnProperty('ontouchstart')
 		var previousHeight = 0;
 		var previousWidth = 0;
-		var image, image2D, image3D, zoomMin, zoomMax = 1.5, zoom, canvas;
+		var originalImage, image, image2D, image3D, zoomMin, zoomMax = 1.5, zoom, canvas;
 		var canvasWrapper = data.element;
 		canvasWrapper.style.height = "100%";
 		canvasWrapper.style.width = "100%";
@@ -23,6 +23,9 @@ window.imageRenderer.methods.renderFlat = function (data) {
 			window.imageRenderer.stats.status = "drawing";
 			window.imageRenderer.stats.minZoom = zoomMin;
 			window.imageRenderer.stats.maxZoom = zoomMax;
+			window.imageRenderer.stats.type = "flat"
+			window.imageRenderer.stats.canvas = canvas
+			window.imageRenderer.stats.originalImage = originalImage
 
 			if (ready) {
 				window.imageRenderer.stats.ready = 1
@@ -290,17 +293,18 @@ window.imageRenderer.methods.renderFlat = function (data) {
 		}
 
 		function create2D(img) {
-			return new Promise(function (resolve) {
+
+			return new Promise(function (res) {
 
 				var _img = new window.Image();
 
 				_img.onload = function () {
-					resolve(_img);
+					res(_img);
 				};
 
 				var ctx = window.document.createElement("canvas").getContext("2d");
-				ctx.canvas.width = img.naturalWidth / 2;
-				ctx.canvas.height = img.naturalHeight;
+				ctx.canvas.width = img.width / 2;
+				ctx.canvas.height = img.height;
 				ctx.drawImage(img, 0, 0);
 				_img.src = ctx.canvas.toDataURL();
 
@@ -319,12 +323,12 @@ window.imageRenderer.methods.renderFlat = function (data) {
 		}
 
 
+		var hasLoadedControls = false
 		function updateImage(_img) {
 
 			if (_img.width > 6000) {
 				_img = proxyImg(_img, 6000)
 			}
-
 
 			if (isMobile) {
 				canvasWrapper.style.backgroundImage = "url(" + _img.src + ")"
@@ -344,16 +348,18 @@ window.imageRenderer.methods.renderFlat = function (data) {
 				controlOptions.vr = toggleVr
 			}
 
-			window.imageRenderer.createControls(controlOptions)
+			if (!hasLoadedControls) {
+				window.imageRenderer.createControls(controlOptions)
+				hasLoadedControls = true
+			}
 
 			image = canvas.getObjects()[0];
 			prevX = image ? image.left : 0
 			prevY = image ? image.top : 0
 
-			window.fabric.Image.fromURL(_img.src, function (oImg) {
+			if (image) {
+				image.setSrc(_img.src, function () {
 
-				if (image) {
-					image._element.src = _img.src
 					image.set({
 						'left': prevX,
 						'top': prevY,
@@ -365,9 +371,16 @@ window.imageRenderer.methods.renderFlat = function (data) {
 					canvas.setZoom(zoom || zoomMin)
 					image.setCoords()
 					canvas.renderAll();
-				} else {
+				})
+			} else {
+				window.fabric.Image.fromURL(_img.src, function (oImg) {
+
 					canvas.add(oImg);
 					image = canvas.getObjects()[0];
+
+					prevW = _img.width || image.width
+					prevH = _img.height || image.height
+
 					image.hasBorders = image.hasControls = false;
 					image.selectable = false;
 
@@ -380,15 +393,14 @@ window.imageRenderer.methods.renderFlat = function (data) {
 					canvas.renderAll();
 					canvasWrapper.classList.add("active");
 
-					prevW = _img.width;
-					prevH = _img.height
-
 					sendUpdate(true);
 
 					setEvents();
-				}
 
-			}, { crossOrigin: "anonymous" });
+
+				}, { crossOrigin: "anonymous" });
+			}
+
 		}
 
 
@@ -410,11 +422,12 @@ window.imageRenderer.methods.renderFlat = function (data) {
 				canvas.setDimensions({ width: canvasWrapper.offsetWidth, height: canvasWrapper.offsetHeight });
 				canvas.selection = false;
 			} else {
-				canvas = new Image()
+				canvas = new window.Image()
 				canvasWrapper.appendChild(canvas);
 			}
 
 			window.imageRenderer.initImages(function (_img) {
+				originalImage = _img
 				if (is3D) {
 					image3D = _img;
 
@@ -426,7 +439,10 @@ window.imageRenderer.methods.renderFlat = function (data) {
 					image2D = _img;
 					updateImage(window.imageRenderer.isFullscreen() ? image3D : image2D);
 				}
+
+				resolve();
 			}, function (_img) {
+
 				if (is3D) {
 					image3D = _img;
 
@@ -439,12 +455,10 @@ window.imageRenderer.methods.renderFlat = function (data) {
 					image2D = _img;
 					updateImage(window.imageRenderer.isFullscreen() ? image3D : image2D);
 				}
-			})
+			}, reject)
 
 			window.addEventListener("resize", elResize, false);
 			window.onorientationchange = reCenter;
-
-			resolve();
 		}
 
 		if (window.navigator.getVRDisplays) {

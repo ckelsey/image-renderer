@@ -1,3 +1,23 @@
+if (!window.HTMLCanvasElement.prototype.toBlob) {
+	Object.defineProperty(window.HTMLCanvasElement.prototype, 'toBlob', {
+		value: function (callback, type, quality) {
+			var canvas = this
+			setTimeout(function () {
+
+				var binStr = window.atob(canvas.toDataURL(type, quality).split(',')[1]),
+					len = binStr.length,
+					arr = new Uint8Array(len)
+
+				for (var i = 0; i < len; i++) {
+					arr[i] = binStr.charCodeAt(i)
+				}
+
+				callback(new window.Blob([arr], { type: type || 'image/png' }))
+			})
+		}
+	})
+}
+
 window.imageRenderer = {
 	data: null,
 	stats: {},
@@ -43,6 +63,20 @@ window.imageRenderer = {
 	},
 
 	loadImage: function (url, endCB, progressCB, errorCB) {
+
+		function checkLoaded(_img) {
+
+			if (_img.width) {
+				endCB(_img);
+			} else {
+				(function (i) {
+					setTimeout(function () {
+						checkLoaded(i)
+					}, 100)
+				})(_img)
+			}
+		}
+
 		var xmlHTTP = new window.XMLHttpRequest();
 		xmlHTTP.open("GET", url, true);
 		xmlHTTP.responseType = "arraybuffer";
@@ -54,7 +88,7 @@ window.imageRenderer = {
 				var img = new window.Image();
 
 				img.onload = function (e) {
-					endCB(e.target.cloneNode());
+					checkLoaded(e.target)
 				};
 
 				img.src = uri;
@@ -89,44 +123,50 @@ window.imageRenderer = {
 		zoomRangeHandle.style.bottom = (invert ? 100 - (percent * 100) : percent * 100) + "%"
 	},
 
-	initImages: function (mainCB, prevCB) {
+	initImages: function (mainCB, prevCB, errCB) {
 		var self = window.imageRenderer
 		var progressBar = window.document.createElement("div");
 		progressBar.classList.add("renderer-progressbar");
 		self.data.element.appendChild(progressBar);
 
 		function loadMain() {
-			self.loadImage(self.data.image, function (mainimg) {
-				progressBar.style.opacity = 0;
+			self.loadImage(self.data.image,
+				function (mainimg) {
+					progressBar.style.opacity = 0;
 
-				setTimeout(function () {
-					var _p = window.document.querySelectorAll(".renderer-progressbar")
-					if (_p) {
-						for (var p = 0; p < _p.length; p++) {
-							self.data.element.removeChild(_p[p]);
+					setTimeout(function () {
+						var _p = window.document.querySelectorAll(".renderer-progressbar")
+						if (_p) {
+							for (var p = 0; p < _p.length; p++) {
+								self.data.element.removeChild(_p[p]);
+							}
 						}
-					}
-				}, 600);
+					}, 600);
 
-				mainCB(mainimg)
+					mainCB(mainimg)
+				},
+				function (prog) {
+					window.imageRenderer.stats.previewProgress = prog
+					progressBar.style.width = prog + "%"
+					self.trigger("statsUpdate", self.stats)
+				},
+				function (err) {
+					progressBar.style.opacity = 0;
 
-			}, function (prog) {
-				window.imageRenderer.stats.previewProgress = prog
-				progressBar.style.width = prog + "%"
-				self.trigger("statsUpdate", self.stats)
-			}, function () {
-
-				progressBar.style.opacity = 0;
-
-				setTimeout(function () {
-					var _p = window.document.querySelectorAll(".renderer-progressbar")
-					if (_p) {
-						for (var p = 0; p < _p.length; p++) {
-							self.data.element.removeChild(_p[p]);
+					setTimeout(function () {
+						var _p = window.document.querySelectorAll(".renderer-progressbar")
+						if (_p) {
+							for (var p = 0; p < _p.length; p++) {
+								self.data.element.removeChild(_p[p]);
+							}
 						}
+					}, 600);
+
+					if (errCB) {
+						errCB(err)
 					}
-				}, 600);
-			});
+				}
+			);
 		}
 
 		function loadPreview() {
@@ -178,6 +218,35 @@ window.imageRenderer = {
 		var fullscreen = options.fullscreen
 		var zoom = options.zoom
 
+		function zoomMouseDown(e) {
+			e.preventDefault()
+			e.stopPropagation()
+
+			var isDragging = true
+			var y = 0;
+			var lastY = e.clientY;
+
+			function mouseMove(e) {
+				e.preventDefault()
+				e.stopPropagation()
+
+				if (isDragging === true) {
+					y = -(e.clientY - lastY);
+					zoom(y / 20)
+					lastY = e.clientY
+				}
+
+			}
+
+			function mouseUp() {
+				window.document.removeEventListener("mousemove", mouseMove, false);
+				window.document.removeEventListener("mouseup", mouseUp, false);
+			}
+
+			window.document.addEventListener("mousemove", mouseMove, false);
+			window.document.addEventListener("mouseup", mouseUp, false);
+		}
+
 		if (vr) {
 			var vrButton = window.document.createElement("button");
 			vrButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" data-name="Layer 86" viewBox="0 0 196.33 123.31"><path d="M194.33 14a12 12 0 0 0-12-12s-63.12-2-84.17-2-84.17 2-84.17 2a12 12 0 0 0-12 12S0 57.73 0 70.33c0 11.76 2 41 2 41a12 12 0 0 0 12 12h56.33s15.31-41.21 27.67-41c12.09.21 25.67 41 25.67 41h58.67a12 12 0 0 0 12-12s2-36.48 2-48.65S194.33 14 194.33 14zM46.67 86.66A28.33 28.33 0 1 1 75 58.33a28.33 28.33 0 0 1-28.33 28.33zm102 0A28.33 28.33 0 1 1 177 58.33a28.33 28.33 0 0 1-28.33 28.33z"/></svg>';
@@ -222,37 +291,11 @@ window.imageRenderer = {
 
 			var zoomRange = window.document.createElement("div")
 			zoomRange.className = "zoom-range"
+			zoomRange.addEventListener("mousedown", zoomMouseDown, false)
 
 			var zoomRangeHandle = window.document.createElement("div")
 			zoomRangeHandle.className = "zoom-range-handle"
-			zoomRangeHandle.addEventListener("mousedown", function (e) {
-				e.preventDefault()
-				e.stopPropagation()
-				var isDragging = true
-				var y = 0;
-				var lastY = e.clientY;
-
-				function mouseMove(e) {
-					e.preventDefault()
-					e.stopPropagation()
-					if (isDragging === true) {
-						y = -(e.clientY - lastY);
-
-						zoom(y / 20)
-
-						lastY = e.clientY
-					}
-
-				}
-
-				function mouseUp() {
-					window.document.removeEventListener("mousemove", mouseMove, false);
-					window.document.removeEventListener("mouseup", mouseUp, false);
-				}
-
-				window.document.addEventListener("mousemove", mouseMove, false);
-				window.document.addEventListener("mouseup", mouseUp, false);
-			})
+			zoomRangeHandle.addEventListener("mousedown", zoomMouseDown, false)
 
 			zoomRange.appendChild(zoomRangeHandle)
 			zoomControlsWrapper.appendChild(zoomPlus)
@@ -321,6 +364,46 @@ window.imageRenderer = {
 		}
 	},
 
+	getVariants: function () {
+		var self = window.imageRenderer;
+		var result = {
+			small: null,
+			large: null
+		}
+
+		if (!self.stats.originalImage) {
+			return
+		}
+
+		var ctx = window.document.createElement("canvas").getContext("2d")
+		ctx.canvas.width = self.stats.originalImage.naturalWidth * window.devicePixelRatio
+		ctx.canvas.height = self.stats.originalImage.naturalHeight * window.devicePixelRatio
+		ctx.drawImage(self.stats.originalImage, 0, 0, self.stats.originalImage.naturalWidth, self.stats.originalImage.naturalHeight, 0, 0, ctx.canvas.width, ctx.canvas.height)
+		ctx.canvas.toBlob(function (large) {
+			result.large = large
+			var link = window.document.createElement('a');
+			window.document.body.appendChild(link);
+			link.download = "large"
+			link.href = URL.createObjectURL(large);
+			link.click();
+			window.document.body.removeChild(link);
+
+			ctx.canvas.width = self.stats.originalImage.naturalWidth / 2
+			ctx.canvas.height = self.stats.originalImage.naturalHeight / 2
+			ctx.drawImage(self.stats.originalImage, 0, 0, self.stats.originalImage.naturalWidth, self.stats.originalImage.naturalHeight, 0, 0, ctx.canvas.width, ctx.canvas.height)
+
+			ctx.canvas.toBlob(function (small) {
+				result.small = small
+				link = window.document.createElement('a');
+				window.document.body.appendChild(link);
+				link.download = "small"
+				link.href = URL.createObjectURL(small);
+				link.click();
+				window.document.body.removeChild(link);
+			}, "image/jpeg", 0.5)
+		}, "image/jpeg", 0.9)
+	},
+
 	init: function (data) {
 		var self = window.imageRenderer;
 
@@ -353,7 +436,7 @@ window.imageRenderer = {
 
 					return resolve()
 
-				});
+				}, reject);
 			}
 
 			reject();

@@ -1,5 +1,5 @@
 window.imageRenderer.methods.render360 = function (data) {
-	return new Promise(function (resolve) {
+	return new Promise(function (resolve, reject) {
 		var is3D = data["3D"];
 		var canvasWrapper = data.element;
 		canvasWrapper.style.height = "100%";
@@ -7,11 +7,11 @@ window.imageRenderer.methods.render360 = function (data) {
 		canvasWrapper.innerHTML = "";
 
 		var minZoom = 5, maxZoom = 50, zoom = 40, distance = 50, ready = false,
-			lon = 0, lat = 0, phi = 0, theta = 0, // Pan / tilt settings
+			lon = 270, lat = 0, phi = 0, theta = 0, // Pan / tilt settings
 			renderer = null, scene = null, camera = null, texture = null, material = null, controls = null, // Three elements
 			isUserInteracting,
 
-			img = null,
+			originalImage = null,
 			ctxTop = window.document.createElement("canvas").getContext("2d"), // for 3d photospheres
 
 			onPointerDownPointerX = 0,
@@ -56,6 +56,9 @@ window.imageRenderer.methods.render360 = function (data) {
 				window.imageRenderer.stats.status = "drawing";
 				window.imageRenderer.stats.minZoom = minZoom;
 				window.imageRenderer.stats.maxZoom = maxZoom;
+				window.imageRenderer.stats.type = "360"
+				window.imageRenderer.stats.canvas = renderer.domElement
+				window.imageRenderer.stats.originalImage = originalImage
 
 				window.imageRenderer.updateZoomHandle(true)
 
@@ -154,16 +157,15 @@ window.imageRenderer.methods.render360 = function (data) {
 		/* SETUP */
 
 		function setImages(_img) {
+
 			if (is3D) {
-				ctxTop.canvas.width = _img.naturalWidth;
-				ctxTop.canvas.height = _img.naturalHeight / 2;
+				ctxTop.canvas.width = _img.width;
+				ctxTop.canvas.height = _img.height / 2;
 				ctxTop.drawImage(_img, 0, 0);
-				img = ctxTop.canvas;
-			} else {
-				img = _img;
+				_img = ctxTop.canvas;
 			}
 
-			return img;
+			return _img;
 		}
 
 		function fullscreen(e) {
@@ -177,23 +179,25 @@ window.imageRenderer.methods.render360 = function (data) {
 
 		}
 
-		function respond() {
-			var controlOptions = {
-				fullscreen: fullscreen,
-				onExitFullscreen: onExitFullscreen,
-				zoom: doZoom
-			}
-
-			window.imageRenderer.createControls(controlOptions)
-
-			resolve();
-		}
+		var hasLoadedControls = false
 
 		function finish(_img) {
 			var i = setImages(_img);
 			texture.image = i;
 			texture.needsUpdate = true;
 			draw();
+
+			if (!hasLoadedControls) {
+				var controlOptions = {
+					fullscreen: fullscreen,
+					onExitFullscreen: onExitFullscreen,
+					zoom: doZoom
+				}
+
+				window.imageRenderer.createControls(controlOptions)
+			}
+
+			hasLoadedControls = true
 		}
 
 		function run() {
@@ -234,20 +238,19 @@ window.imageRenderer.methods.render360 = function (data) {
 			animate();
 
 			window.imageRenderer.initImages(function (_img) {
+
+				originalImage = _img
 				finish(_img);
+				resolve();
 			}, function (_img) {
 				finish(_img);
-			})
+			}, reject)
 
 
 			canvasWrapper.addEventListener("mousedown", onDocumentMouseDown, false);
 			canvasWrapper.addEventListener("mousemove", onDocumentMouseMove, false);
-			// canvasWrapper.addEventListener("wheel", onDocumentMouseWheel, false);
-
 			window.document.addEventListener("mouseup", onDocumentMouseUp, false);
 			window.addEventListener("resize", resize, true);
-
-			respond();
 		}
 
 		if (window.navigator.getVRDisplays) {
@@ -264,6 +267,8 @@ window.imageRenderer.methods.render360 = function (data) {
 					}
 
 					run();
+				}, function () {
+					run()
 				});
 			} catch (e) {
 				run();
